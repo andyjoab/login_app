@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:login_app/components/pages.dart';
 import 'package:login_app/pestañas/infoacade.dart'
     as infoacade; // Asegúrate de que esta importación sea correcta
+import 'package:login_app/reinscripcion.dart' as reinscripcion;
 
 class PersistentDrawer extends StatefulWidget {
   const PersistentDrawer({super.key});
@@ -15,7 +16,7 @@ class _PersistentDrawerState extends State<PersistentDrawer> {
   final List<Widget> _pages = [
     const PageOne(),
     const infoacade.AcademicInfo(),
-    const PageThree(),
+    const reinscripcion.PageThree(),
     const PageFour(),
   ];
 

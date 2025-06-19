@@ -11,7 +11,7 @@ class CustomDrawer extends StatelessWidget {
         children: <Widget>[
           DrawerHeader(
             decoration: const BoxDecoration(
-              color: Color.fromARGB(255, 85, 112, 233),
+              color: Color.fromARGB(255, 144, 162, 245),
             ),
             child: SizedBox(
               height: 100,

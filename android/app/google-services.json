@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "778988542916",
+    "project_id": "inscribetec-44c30",
+    "storage_bucket": "inscribetec-44c30.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:778988542916:android:387afd539b5f2fd77e6291",
+        "android_client_info": {
+          "package_name": "com.example.login_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtOwI2XAs6Zk2D6efAedAuyLXYYp6ZmyM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:778988542916:android:e99c697944cce4fa7e6291",
+        "android_client_info": {
+          "package_name": "com.example.navigation"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtOwI2XAs6Zk2D6efAedAuyLXYYp6ZmyM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

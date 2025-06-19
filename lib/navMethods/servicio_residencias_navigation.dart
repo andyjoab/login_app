@@ -32,21 +32,12 @@ class _ServicioResidenciasNavigationState
           true, // Esto es importante para que la barra curvada se vea bien
       body: _pages[_selectedIndex],
       bottomNavigationBar: CurvedNavigationBar(
-        backgroundColor:
-            Colors
-                .transparent, // Fondo transparente para que se vea el color del Scaffold
+        backgroundColor: Colors
+            .transparent, // Fondo transparente para que se vea el color del Scaffold
         color: const Color.fromARGB(
-          255,
-          246,
-          255,
-          116,
-        ), // Color de la barra curvada
+            255, 22, 180, 228), // Color de la barra curvada
         buttonBackgroundColor: const Color.fromARGB(
-          255,
-          246,
-          255,
-          116,
-        ), // Color del botón central (si lo hubiera)
+            255, 116, 142, 255), // Color del botón central (si lo hubiera)
         height: 60,
         index: _selectedIndex,
         items: items,

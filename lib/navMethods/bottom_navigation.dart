@@ -4,9 +4,7 @@ import '../components/pages.dart'
     as pages; // Mantén esta importación si aún necesitas PageOne, PageThree, PageFour
 import 'package:login_app/pestañas/infoacade.dart'
     as infoacade; // <--- Añade esta importación
-// Asegúrate de que la ruta sea correcta según la ubicación de tu archivo academic_info_screen.dart.
-// Por ejemplo, si está en el mismo nivel que bottomNavigation.dart, podría ser 'academic_info_screen.dart'
-// o si está en una carpeta 'screens', podría ser '../screens/academic_info_screen.dart'
+import 'package:login_app/reinscripcion.dart' as reinscripcion;
 
 class BottomNavigation extends StatefulWidget {
   const BottomNavigation({super.key});
@@ -19,8 +17,8 @@ class _BottomNavigationState extends State<BottomNavigation> {
   int _selectedIndex = 0;
   final List<Widget> _pages = [
     const pages.PageOne(), // Índice 0: Información personal
-    const infoacade.AcademicInfo(), // Índice 1: Información académica - ¡Aquí está el cambio!
-    const pages.PageThree(), // Índice 2: Reinscripción
+    const infoacade.AcademicInfo(), // Índice 1: Información académica
+    const reinscripcion.PageThree(), // Índice 2: Reinscripción
     const pages.PageFour(), // Índice 3: Servicio social/Residencias
   ];
 
@@ -50,9 +48,8 @@ class _BottomNavigationState extends State<BottomNavigation> {
             label: 'Servicio social/Residencias',
           ),
         ],
-        unselectedItemColor:
-            Colors
-                .grey, // Opcional: Define un color para los iconos no seleccionados
+        unselectedItemColor: Colors
+            .grey, // Opcional: Define un color para los iconos no seleccionados
         selectedItemColor:
             Colors.blue, // Opcional: Define un color para el icono seleccionado
       ),

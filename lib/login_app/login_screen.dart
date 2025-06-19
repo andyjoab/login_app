@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 //import 'package:login_app/login_app/registration_screen.dart';
 //import 'main_menu_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,15 +15,30 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  void _login() {
+  void _login() async {
     if (_formKey.currentState!.validate()) {
-      // Aquí iría tu lógica de autenticación real
-      // Por ahora, simulamos un login exitoso
-      // ignore: avoid_print
-      print(
-        'Correo: ${_emailController.text}, Contraseña: ${_passwordController.text}',
-      );
-      Navigator.pushReplacementNamed(context, '/main_menu');
+      try {
+        UserCredential userCredential =
+            await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+        print(
+            'Correo: ${_emailController.text}, Contraseña: ${_passwordController.text}');
+        Navigator.pushReplacementNamed(context,
+            '/main_menu'); // Imprime el correo del usuario que inició sesión
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'user-not-found') {
+          print('No se encontro ningun usuario para ese correo institucional.');
+        } else if (e.code == 'wrong-password') {
+          print('Contraseña incorrecta proporcionada para ese usuario.');
+        } else {
+          print('Error al iniciar sesión: ${e.message}');
+        }
+      } catch (e) {
+        // Manejo de errores generales
+        print(e);
+      }
     }
   }
 
@@ -49,8 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           Positioned(
-            top:
-                MediaQuery.of(context).padding.top +
+            top: MediaQuery.of(context).padding.top +
                 20.0, // Ajusta 20.0 para la separación deseada del top seguro
             left: 0,
             right: 0,
@@ -69,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         67,
                         186,
                         241,
-                      // ignore: deprecated_member_use
+                        // ignore: deprecated_member_use
                       ).withOpacity(0.3),
                       offset: Offset(2.0, 2.0),
                     ),
@@ -210,33 +225,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Estilo común para los InputDecoration de los TextFormField
   InputDecoration get _inputDecoration => InputDecoration(
-    filled: true,
-    fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(
-      vertical: 15.0,
-      horizontal: 15.0,
-    ),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10.0),
-      borderSide: const BorderSide(color: Colors.grey, width: 1.0),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10.0),
-      borderSide: const BorderSide(color: Colors.grey, width: 1.0),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10.0),
-      borderSide: const BorderSide(color: Color(0xFF265073), width: 2.0),
-    ),
-    errorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10.0),
-      borderSide: const BorderSide(color: Colors.red, width: 2.0),
-    ),
-    focusedErrorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10.0),
-      borderSide: const BorderSide(color: Colors.red, width: 2.0),
-    ),
-    labelStyle: const TextStyle(color: Colors.black54),
-    hintStyle: const TextStyle(color: Colors.grey),
-  );
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 15.0,
+          horizontal: 15.0,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: const BorderSide(color: Colors.grey, width: 1.0),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: const BorderSide(color: Colors.grey, width: 1.0),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: const BorderSide(color: Color(0xFF265073), width: 2.0),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: const BorderSide(color: Colors.red, width: 2.0),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: const BorderSide(color: Colors.red, width: 2.0),
+        ),
+        labelStyle: const TextStyle(color: Colors.black54),
+        hintStyle: const TextStyle(color: Colors.grey),
+      );
 }

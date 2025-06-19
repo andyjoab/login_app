@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart'; // Asegúrate que esta ruta sea correcta
+//import 'login_screen.dart'; // Asegúrate que esta ruta sea correcta
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -13,17 +14,24 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  void _register() {
+  void _register() async {
     if (_formKey.currentState!.validate()) {
       if (_passwordController.text == _confirmPasswordController.text) {
-        // Aquí iría tu lógica de registro real
-        print(
-          'Correo de registro: ${_emailController.text}, Contraseña: ${_passwordController.text}',
-        );
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('¡Registro exitoso!')));
-        Navigator.pop(context); // Vuelve a la pantalla de login
+        try {
+          UserCredential userCredential =
+              await FirebaseAuth.instance.createUserWithEmailAndPassword(
+            email: _emailController.text,
+            password: _passwordController.text,
+          );
+          // Aquí iría tu lógica de registro real
+          print(
+              'Correo de registro: ${_emailController.text}, Contraseña: ${_passwordController.text}');
+        } on FirebaseAuthException catch (e) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('¡Registro exitoso!')));
+          Navigator.pop(context); // Vuelve a la pantalla de login
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Las contraseñas no coinciden')),
@@ -65,8 +73,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             ),
           ),
           Positioned(
-            top:
-                MediaQuery.of(context).padding.top +
+            top: MediaQuery.of(context).padding.top +
                 20.0, // Ajusta 20.0 para la separación deseada del top seguro
             left: 0,
             right: 0,
@@ -234,33 +241,33 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   // Estilo común para los InputDecoration de los TextFormField
   InputDecoration get _inputDecoration => InputDecoration(
-    filled: true,
-    fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(
-      vertical: 15.0,
-      horizontal: 15.0,
-    ),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10.0),
-      borderSide: const BorderSide(color: Colors.grey, width: 1.0),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10.0),
-      borderSide: const BorderSide(color: Colors.grey, width: 1.0),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10.0),
-      borderSide: const BorderSide(color: Color(0xFF265073), width: 2.0),
-    ),
-    errorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10.0),
-      borderSide: const BorderSide(color: Colors.red, width: 2.0),
-    ),
-    focusedErrorBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10.0),
-      borderSide: const BorderSide(color: Colors.red, width: 2.0),
-    ),
-    labelStyle: const TextStyle(color: Colors.black54),
-    hintStyle: const TextStyle(color: Colors.grey),
-  );
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 15.0,
+          horizontal: 15.0,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: const BorderSide(color: Colors.grey, width: 1.0),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: const BorderSide(color: Colors.grey, width: 1.0),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: const BorderSide(color: Color(0xFF265073), width: 2.0),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: const BorderSide(color: Colors.red, width: 2.0),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: const BorderSide(color: Colors.red, width: 2.0),
+        ),
+        labelStyle: const TextStyle(color: Colors.black54),
+        hintStyle: const TextStyle(color: Colors.grey),
+      );
 }

@@ -86,7 +86,8 @@ class AcademicInfo extends StatelessWidget {
             const SizedBox(width: 20),
             Text(
               label,
-              style: const TextStyle(color: Colors.black, fontSize: 18),
+              style: const TextStyle(
+                  color: Color.fromARGB(255, 119, 117, 117), fontSize: 18),
             ),
           ],
         ),

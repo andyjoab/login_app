@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:login_app/components/pages.dart';
 import 'package:login_app/pestañas/infoacade.dart' as infoacade;
+import 'package:login_app/reinscripcion.dart' as reinscripcion;
 
 class IndexedStackNavigation extends StatefulWidget {
   const IndexedStackNavigation({super.key});
@@ -20,7 +21,7 @@ class _IndexedStackNavigationState extends State<IndexedStackNavigation> {
         children: const <Widget>[
           PageOne(),
           infoacade.AcademicInfo(),
-          PageThree(),
+          reinscripcion.PageThree(),
           PageFour(),
         ],
       ),

@@ -10,12 +10,22 @@ class EphimeralDrawerNavigation extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: <Widget>[
-          const DrawerHeader(
-            decoration: BoxDecoration(color: Color.fromARGB(255, 85, 112, 233)),
-            child: Text(
-              'InscribeTEC',
-              style: TextStyle(color: Colors.white, fontSize: 24),
+          Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/Logo-TecNM-2017.png'),
+                fit: BoxFit.cover,
+              ),
             ),
+            child: const SizedBox(
+              height: 150,
+              child: DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                ),
+                child: null,
+              ),
+            ), // Encabezado personalizado
           ),
           ListTile(
             leading: const Icon(Icons.person),
@@ -69,12 +79,13 @@ class EphimeralDrawerNavigation extends StatelessWidget {
           ListTile(
             leading: const Icon(
               Icons.logout,
-              color: Colors.red,
+              color: Color.fromARGB(255, 116, 112, 112),
             ), // Icono de flecha hacia afuera y color rojo
             title: const Text(
               'Cerrar Sesión',
               style: TextStyle(
-                color: Colors.red, // Color rojo para el texto
+                color: Color.fromARGB(
+                    255, 134, 131, 131), // Color rojo para el texto
                 fontWeight: FontWeight.bold,
               ),
             ),
