@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Para TextInputFormatter
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+//import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart'; // Para formatear la fescha
-import 'package:login_app/modelos/modelo_alumno.dart'; 
-import 'package:login_app/components/pages.dart'; 
+import 'package:login_app/modelos/modelo_alumno.dart';
+//import 'package:login_app/components/pages.dart';
 
 class InfoPersonalScreen extends StatefulWidget {
   final String userUid;
@@ -333,16 +333,16 @@ class _InfoPersonalScreenState extends State<InfoPersonalScreen> {
               ElevatedButton(
                 onPressed: _guardarDatosAlumno,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
+                  backgroundColor: const Color.fromARGB(255, 11, 178, 255),
+                  foregroundColor: const Color.fromARGB(255, 255, 255, 255),
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: const Text(
-                  'Guardar Información Personal',
-                  style: TextStyle(fontSize: 18),
+                  'Guardar',
+                  style: TextStyle(fontSize: 15),
                 ),
               ),
             ],

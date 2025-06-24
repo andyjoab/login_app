@@ -1,9 +1,9 @@
-// lib/services/firestore_service.dart
+// lib/servicio/firestore_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../modelos/modelo_alumno.dart';
 import '../modelos/modelo_asignatura.dart'; // Solo si vas a usar el catálogo base
 import '../modelos/modelo_grupo.dart';
-import '../modelos/modelo_inscripcion.dart'; // Asegúrate de que este es el modelo MODIFICADO
+import '../modelos/modelo_inscripcion.dart'; // ASEGÚRATE de que este es el modelo MODIFICADO con 'uidAlumno'
 import '../modelos/modelo_semestre.dart'; // Asegúrate de que este es el modelo con 'activo'
 import '../modelos/modelo_ofertaacademica.dart'; // Nuevo modelo
 import '../modelos/modelo_calificacion.dart'; // Nuevo modelo
@@ -11,9 +11,8 @@ import '../modelos/modelo_calificacion.dart'; // Nuevo modelo
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // --- Operaciones para Alumnos ---
   // Obtener un alumno por su UID (que debería ser el ID del documento en Firestore)
-  Future<Alumno?> getAlumno(String uid) async {
+  Future<Alumno?> getAlumnoData(String uid) async {
     try {
       final doc = await _db.collection('alumnos').doc(uid).get();
       if (doc.exists && doc.data() != null) {
@@ -21,7 +20,7 @@ class FirestoreService {
       }
       return null;
     } catch (e) {
-      print('Error al obtener alumno: $e');
+      print('Error al obtener datos del alumno: $e');
       return null;
     }
   }
@@ -37,7 +36,7 @@ class FirestoreService {
     }
   }
 
-  // Actualizar datos de un alumno
+  // Actualizar datos de un alumno usando el objeto Alumno completo
   Future<void> updateAlumno(Alumno alumno) async {
     try {
       await _db
@@ -46,6 +45,17 @@ class FirestoreService {
           .update(alumno.toFirestore());
     } catch (e) {
       print('Error al actualizar alumno: $e');
+      rethrow;
+    }
+  }
+
+  // Nuevo método para actualizar campos específicos del alumno
+  // Esto es útil para actualizar solo 'id_grupo_actual' y 'id_semestre_actual'
+  Future<void> updateAlumnoData(String uid, Map<String, dynamic> data) async {
+    try {
+      await _db.collection('alumnos').doc(uid).update(data);
+    } catch (e) {
+      print('Error al actualizar datos específicos del alumno: $e');
       rethrow;
     }
   }
@@ -96,17 +106,35 @@ class FirestoreService {
   }
 
   // --- Operaciones para Inscripciones (Reinscripción) ---
-  Future<void> registrarInscripcion(Inscripcion inscripcion) async {
+
+  // Método para crear una nueva inscripción
+  // Usará el ID que ya viene en el objeto 'inscripcion' si fue generado previamente
+  // (por ejemplo, con FirebaseFirestore.instance.collection('inscripciones').doc().id)
+  Future<void> createInscripcion(Inscripcion inscripcion) async {
     try {
-      // Firestore generará un ID de documento único automáticamente con add()
-      await _db.collection('inscripciones').add(inscripcion.toFirestore());
+      await _db
+          .collection('inscripciones')
+          .doc(inscripcion.idInscripcion) // Usa el ID del objeto Inscripcion
+          .set(inscripcion.toFirestore());
     } catch (e) {
-      print('Error al registrar inscripción: $e');
+      print('Error al crear inscripción: $e');
+      rethrow;
+    }
+  }
+
+  // Método para actualizar una inscripción existente
+  Future<void> updateInscripcion(
+      String docId, Map<String, dynamic> data) async {
+    try {
+      await _db.collection('inscripciones').doc(docId).update(data);
+    } catch (e) {
+      print('Error al actualizar inscripción: $e');
       rethrow;
     }
   }
 
   // Obtener las inscripciones de un alumno (para historial y horario)
+  // Nota: Considera añadir un filtro por UID del alumno aquí también, si tus reglas de seguridad lo requieren para lecturas.
   Stream<List<Inscripcion>> getInscripcionesPorAlumno(String matriculaAlumno) {
     return _db
         .collection('inscripciones')

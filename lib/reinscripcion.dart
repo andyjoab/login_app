@@ -1,14 +1,5 @@
 import 'package:flutter/material.dart';
-//import 'package:firebase_core/firebase_core.dart'; // Import Firebase
-//import 'package:login_app/firebase_options.dart'; // Assuming you have this file for Firebase options
-import 'package:login_app/reinscripcion/semestre.dart'; // New screen
-
-//void main() async {
-//WidgetsFlutterBinding.ensureInitialized();
-//await Firebase.initializeApp(
-//options: DefaultFirebaseOptions.currentPlatform, // Initialize Firebase
-//);
-//}
+import 'package:login_app/reinscripcion/semestre.dart';
 
 class PageThree extends StatelessWidget {
   const PageThree({super.key});
@@ -35,14 +26,15 @@ class PageThree extends StatelessWidget {
   }
 }*/
     return Scaffold(
-      // Envuelve tu contenido en un Scaffold
       appBar: AppBar(
         title: const Text('Reinscripción'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        iconTheme: IconThemeData(
+          color: Color.fromARGB(255, 39, 38, 38),
+        ),
+        foregroundColor: Colors.black,
       ),
-      body:
-          const Seleccionsemestre(), // Tu pantalla inicial de selección de semestre
+      body: const Seleccionsemestre(),
     );
   }
 }

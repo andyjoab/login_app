@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// import 'login_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:login_app/firebase_options.dart';
 import 'package:login_app/login_app/login_screen.dart';

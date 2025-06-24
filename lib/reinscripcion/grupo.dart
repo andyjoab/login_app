@@ -25,8 +25,8 @@ class _SelecciongrupoState extends State<Selecciongrupo> {
     return Scaffold(
       appBar: AppBar(
         title: Text('${widget.semesterName}'), //Selecciona el grupo
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        backgroundColor: Colors.white10,
+        foregroundColor: Colors.black,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -70,9 +70,9 @@ class _SelecciongrupoState extends State<Selecciongrupo> {
                       Color buttonColor =
                           Theme.of(context).colorScheme.secondary;
                       if (index % 2 == 0) {
-                        buttonColor = const Color.fromARGB(255, 252, 255, 54);
+                        buttonColor = const Color.fromARGB(255, 244, 247, 112);
                       } else {
-                        buttonColor = const Color.fromARGB(255, 255, 242, 64);
+                        buttonColor = const Color.fromARGB(255, 252, 193, 145);
                       }
 
                       return Padding(

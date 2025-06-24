@@ -1,33 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Opcional: para guardar metadatos en Firestore
-import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io'; // Necesario para 'File' en plataformas no web
+import 'dart:typed_data'; // Necesario para 'Uint8List' en web
+import 'package:flutter/foundation.dart'
+    show kIsWeb; // Para detectar si estamos en la web
 
-import 'package:login_app/login_app/main_menu_screen.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: const FirebaseOptions(
-      // Reemplaza estos valores con tu configuración de Firebase
-      apiKey: "TU_API_KEY",
-      authDomain: "TU_AUTH_DOMAIN",
-      projectId: "TU_PROJECT_ID",
-      storageBucket: "TU_STORAGE_BUCKET",
-      messagingSenderId: "TU_MESSAGING_SENDER_ID",
-      appId: "TU_APP_ID",
-    ),
-  );
-}
+import 'package:login_app/modelos/modelo_carga_documentos.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ServicioSocialPage extends StatelessWidget {
   const ServicioSocialPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ServicioSocialScreen();
+    return const ServicioSocialScreen();
   }
 }
 
@@ -39,181 +28,201 @@ class ServicioSocialScreen extends StatefulWidget {
 }
 
 class _ServicioSocialScreenState extends State<ServicioSocialScreen> {
-  // Mapa para guardar la URL del archivo subido para cada tipo de documento
-  // Esto simula cómo podrías mantener el estado de los documentos ya subidos
-  final Map<String, String?> _uploadedFileUrls = {
-    'Hoja de autorización de SENSISER(PDF)': null,
-    'Carnet de salud vigente': null,
-    'Constancia 4 nivel del idioma inglés': null,
-    'Constancia académica': null,
-  };
+  final Map<String, DocumentoSubido?> _uploadedDocuments = {};
 
-  // Referencia a Firebase Storage
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-  // Opcional: Referencia a Cloud Firestore
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Función para seleccionar y subir un archivo PDF
-  Future<void> _pickAndUploadPdf(String documentType) async {
+  final List<String> _requiredDocuments = [
+    'Hoja de autorización de SENSISER pdf',
+    'Carnet de salud vigente',
+    'Constancia 4 nivel idioma inglés',
+    'Constancia académica',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _auth.authStateChanges().listen((User? user) {
+      _loadUploadedDocuments();
+    });
+    _loadUploadedDocuments();
+  }
+
+  Future<void> _loadUploadedDocuments() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      setState(() {
+        _uploadedDocuments.clear();
+      });
+      return;
+    }
+
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf'],
-      );
+      final snapshot = await _firestore
+          .collection('alumnos')
+          .doc(user.uid)
+          .collection('documentos_servicio_social')
+          .get();
 
-      if (result != null && result.files.single.path != null) {
-        File file = File(result.files.single.path!);
-        String fileName =
-            '${DateTime.now().millisecondsSinceEpoch}_${result.files.single.name}';
-        Reference ref =
-            _storage.ref().child('servicio_social/$documentType/$fileName');
+      setState(() {
+        _uploadedDocuments.clear();
+        for (var doc in snapshot.docs) {
+          final documento = DocumentoSubido.fromFirestore(doc);
+          _uploadedDocuments[documento.tipoDocumento] = documento;
+        }
+      });
+    } catch (e) {
+      _showSnackBar('Error al cargar documentos: $e');
+      debugPrint('Error al cargar documentos: $e');
+    }
+  }
 
-        // Mostrar un indicador de carga
-        _showMessageBox(context, 'Subiendo archivo...', false);
+  // Función para seleccionar y subir un PDF a Firebase Storage
+  Future<void> _pickAndUploadPdf(String documentType) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      _showSnackBar('Debes iniciar sesión para subir documentos.');
+      return;
+    }
 
-        UploadTask uploadTask = ref.putFile(file);
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
 
-        uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-          // Puedes usar esto para mostrar el progreso de la carga
-          double progress =
-              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          print('Progreso de carga: $progress%');
-        });
+    if (result != null) {
+      String fileName = result.files.single.name;
+      String filePath =
+          'alumnos/${user.uid}/documentos_servicio_social/$fileName';
+
+      try {
+        _showSnackBar('Subiendo $documentType...');
+
+        UploadTask uploadTask;
+
+        if (kIsWeb) {
+          // Para la web, usamos putData con los bytes del archivo
+          if (result.files.single.bytes == null) {
+            _showSnackBar(
+                'Error: No se pudo obtener el contenido del archivo en la web.');
+            return;
+          }
+          Uint8List fileBytes = result.files.single.bytes!;
+          uploadTask = _storage.ref().child(filePath).putData(fileBytes);
+        } else {
+          // Para móvil/escritorio, usamos putFile con la ruta del archivo
+          if (result.files.single.path == null) {
+            _showSnackBar('Error: No se pudo obtener la ruta del archivo.');
+            return;
+          }
+          File file = File(result.files.single.path!);
+          uploadTask = _storage.ref().child(filePath).putFile(file);
+        }
 
         TaskSnapshot snapshot = await uploadTask;
         String downloadUrl = await snapshot.ref.getDownloadURL();
 
+        await _firestore
+            .collection('alumnos')
+            .doc(user.uid)
+            .collection('documentos_servicio_social')
+            .doc(documentType)
+            .set(DocumentoSubido(
+                    tipoDocumento: documentType,
+                    url: downloadUrl,
+                    fechaSubida: Timestamp.now(),
+                    nombreArchivo: fileName)
+                .toFirestore());
+
         setState(() {
-          _uploadedFileUrls[documentType] = downloadUrl;
+          _uploadedDocuments[documentType] = DocumentoSubido(
+            tipoDocumento: documentType,
+            url: downloadUrl,
+            fechaSubida: Timestamp.now(),
+            nombreArchivo: fileName,
+          );
         });
 
-        // Cerrar el indicador de carga y mostrar mensaje de éxito
-        Navigator.pop(context); // Cierra el mensaje de carga
-        _showMessageBox(context,
-            'Archivo subido exitosamente: ${result.files.single.name}', true);
-
-        // Opcional: Guardar la URL del archivo en Cloud Firestore
-        await _firestore
-            .collection('user_documents')
-            .doc('current_user_id')
-            .set({
-          documentType: downloadUrl,
-          'last_updated': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true)); // Merge para no sobrescribir otros campos
-        print('URL guardada en Firestore: $downloadUrl');
-      } else {
-        // El usuario canceló la selección
-        _showMessageBox(context, 'Selección de archivo cancelada.', true);
+        _showSnackBar('$documentType subido exitosamente.');
+      } on FirebaseException catch (e) {
+        _showSnackBar('Error al subir $documentType: ${e.message}');
+        debugPrint('Error de Firebase: $e');
+      } catch (e) {
+        _showSnackBar('Error desconocido al subir $documentType: $e');
+        debugPrint('Error general: $e');
       }
-    } catch (e) {
-      // Manejo de errores durante la selección o carga
-      print('Error al seleccionar o subir archivo: $e');
-      Navigator.pop(
-          context); // Asegurarse de cerrar el mensaje de carga en caso de error
-      _showMessageBox(context, 'Error al subir el archivo: $e', true);
+    } else {
+      _showSnackBar('Selección de archivo cancelada.');
     }
   }
 
-  // Función para mostrar un cuadro de mensaje personalizado (reemplazo de alert())
-  void _showMessageBox(BuildContext context, String message, bool dismissible) {
-    showDialog(
-      context: context,
-      barrierDismissible: dismissible,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
-          title: Text('Notificación'),
-          content: Text(message),
-          actions: <Widget>[
-            if (dismissible)
-              TextButton(
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.blue,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.0)),
-                ),
-                child: Text('Aceptar'),
-                onPressed: () {
-                  Navigator.of(dialogContext)
-                      .pop(); // Cierra el cuadro de diálogo
-                },
-              ),
-          ],
-        );
-      },
-    );
+  void _showSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
+  Future<void> _viewPdf(String url) async {
+    if (url.isNotEmpty) {
+      try {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri);
+        } else {
+          _showSnackBar('No se pudo abrir el enlace: $url');
+          debugPrint('No se pudo lanzar URL: $url');
+        }
+      } catch (e) {
+        _showSnackBar('Error al abrir el documento: $e');
+        debugPrint('Error al abrir URL: $e');
+      }
+    } else {
+      _showSnackBar('La URL del documento no es válida.');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       appBar: AppBar(
-          title: const Text('Servicio Social'),
-          centerTitle: true,
-          backgroundColor: Colors.blueAccent,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              Navigator.pop(context); // Regresa a la pantalla anterior
-              // Navega hacia atrás
-            },
-          )),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Por favor sube los siguientes documentos de manera individual, en formato pdf',
-              style: TextStyle(fontSize: 16, color: Colors.black87),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView(
-                children: _uploadedFileUrls.keys.map((documentType) {
-                  return _buildDocumentUploadTile(documentType);
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  // Lógica para guardar todos los cambios o enviar la información
-                  // En una aplicación real, aquí podrías enviar todas las URLs
-                  // de los documentos a un backend o a Firestore.
-                  _showMessageBox(
-                      context, 'Documentos guardados (simulado).', true);
-                  print('URLs de documentos subidos: $_uploadedFileUrls');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(
-                      255, 255, 255, 255), // Color de fondo del botón
-                  foregroundColor: Colors.white, // Color del texto
-                  minimumSize:
-                      Size(double.infinity, 50), // Ancho completo, altura fija
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(10.0), // Esquinas redondeadas
-                  ),
-                  elevation: 5, // Sombra
-                ),
-                child: const Text(
-                  'Guardar',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
-        ),
+        title: const Text('Servicio Social',
+            style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.blue[700],
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
+      body: _auth.currentUser == null
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Text(
+                  'Inicia sesión para subir y gestionar tus documentos de Servicio Social.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: _requiredDocuments.length,
+              itemBuilder: (context, index) {
+                final documentType = _requiredDocuments[index];
+                final uploadedDoc = _uploadedDocuments[documentType];
+                final bool isUploaded = uploadedDoc != null;
+
+                return _buildDocumentUploadTile(
+                    documentType, isUploaded, uploadedDoc);
+              },
+            ),
     );
   }
 
-  // Widget para construir cada fila de documento para subir
-  Widget _buildDocumentUploadTile(String documentType) {
-    final bool isUploaded = _uploadedFileUrls[documentType] != null;
+  Widget _buildDocumentUploadTile(
+      String documentType, bool isUploaded, DocumentoSubido? uploadedDoc) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Container(
@@ -225,7 +234,7 @@ class _ServicioSocialScreenState extends State<ServicioSocialScreen> {
               color: Colors.grey.withOpacity(0.2),
               spreadRadius: 1,
               blurRadius: 3,
-              offset: Offset(0, 2), // changes position of shadow
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -236,16 +245,40 @@ class _ServicioSocialScreenState extends State<ServicioSocialScreen> {
             documentType,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
           ),
-          trailing: IconButton(
-            icon: Icon(
-              isUploaded
-                  ? Icons.check_circle
-                  : Icons.note_add, // Icono de verificación si ya se subió
-              color: isUploaded ? Colors.green : Colors.blue,
-              size: 30,
-            ),
-            onPressed: () => _pickAndUploadPdf(documentType),
-            tooltip: 'Subir archivo PDF para $documentType',
+          subtitle: isUploaded
+              ? Text(
+                  'Subido: ${uploadedDoc!.nombreArchivo ?? 'documento.pdf'} el ${uploadedDoc.fechaSubida.toDate().day}/${uploadedDoc.fechaSubida.toDate().month}/${uploadedDoc.fechaSubida.toDate().year}',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                )
+              : const Text(
+                  'No subido',
+                  style: TextStyle(fontSize: 12, color: Colors.red),
+                ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isUploaded)
+                IconButton(
+                  icon: const Icon(Icons.visibility,
+                      color: Colors.grey, size: 28),
+                  onPressed: () {
+                    if (uploadedDoc!.url.isNotEmpty) {
+                      _viewPdf(uploadedDoc.url);
+                    }
+                  },
+                  tooltip: 'Ver documento subido',
+                ),
+              IconButton(
+                icon: Icon(
+                  isUploaded ? Icons.cloud_upload : Icons.note_add,
+                  color: isUploaded ? Colors.orange : Colors.blue,
+                  size: 30,
+                ),
+                onPressed: () => _pickAndUploadPdf(documentType),
+                tooltip:
+                    isUploaded ? 'Reemplazar documento' : 'Subir documento',
+              ),
+            ],
           ),
         ),
       ),

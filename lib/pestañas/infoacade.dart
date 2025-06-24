@@ -17,11 +17,9 @@ class AcademicInfo extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        // Añadimos el AppBar aquí
         title: const Text('Información académica'),
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         leading: IconButton(
-          // Botón de retroceso explícito
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pop(context);
@@ -37,28 +35,28 @@ class AcademicInfo extends StatelessWidget {
             children: [
               _buildMenuItem(
                 context,
-                icon: Icons.assignment, // Icono de documento/acta
+                icon: Icons.assignment, 
                 label: 'Acta de Calificaciones',
                 onPressed: () => _downloadFile('acta_calificaciones.pdf'),
               ),
               const SizedBox(height: 20),
               _buildMenuItem(
                 context,
-                icon: Icons.book, // Icono de libro
+                icon: Icons.book, 
                 label: 'Historial Académico',
                 onPressed: () => _downloadFile('historial_academico.pdf'),
               ),
               const SizedBox(height: 20),
               _buildMenuItem(
                 context,
-                icon: Icons.grade, // Icono de calificación
+                icon: Icons.grade,
                 label: 'Calificaciones',
                 onPressed: () => _downloadFile('calificaciones.pdf'),
               ),
               const SizedBox(height: 20),
               _buildMenuItem(
                 context,
-                icon: Icons.pie_chart, // Icono de gráfica de pastel
+                icon: Icons.pie_chart, 
                 label: 'Análisis',
                 onPressed: () => _downloadFile('analisis.pdf'),
               ),

@@ -1,15 +1,12 @@
-// lib/models/modelo_inscripcion.dart (MODIFICADO SIGNIFICATIVAMENTE)
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Nueva clase para representar cada materia inscrita dentro de una inscripción
 class MateriaInscrita {
-  final String
-      idOfertaAcademica; // Referencia al documento en 'oferta_academica'
+  final String idOfertaAcademica;
   final String idAsignatura;
   final String nombreAsignatura;
   final String numeroEmpleadoIngeniero;
   final String nombreIngeniero;
-  final Map<String, dynamic> horarioClase; // Copia del horario de esa oferta
+  final Map<String, dynamic> horarioClase;
 
   MateriaInscrita({
     required this.idOfertaAcademica,
@@ -44,21 +41,22 @@ class MateriaInscrita {
 }
 
 class Inscripcion {
-  final String
-      idInscripcion; // Firestore document ID (puede ser vacío al crear)
-  final String matriculaAlumno; // Usar la matrícula para el alumno
-  final String idGrupo; // Referencia al ID del grupo seleccionado
-  final String idSemestre; // Referencia al ID del semestre seleccionado
+  final String idInscripcion;
+  final String matriculaAlumno;
+  final String idGrupo;
+  final String idSemestre;
   final Timestamp fechaInscripcion;
-  final List<MateriaInscrita> materiasInscritas; // LISTA DE MATERIAS INSCRITAS
+  final List<MateriaInscrita> materiasInscritas;
+  final String uidAlumno;
 
   Inscripcion({
-    required this.idInscripcion, // Pasar '' si es una nueva inscripción y Firestore generará uno
+    required this.idInscripcion,
     required this.matriculaAlumno,
     required this.idGrupo,
     required this.idSemestre,
     required this.fechaInscripcion,
     required this.materiasInscritas,
+    required this.uidAlumno,
   });
 
   factory Inscripcion.fromFirestore(Map<String, dynamic> data, String id) {
@@ -75,6 +73,7 @@ class Inscripcion {
       idSemestre: data['id_semestre'] ?? '',
       fechaInscripcion: data['fecha_inscripcion'] as Timestamp,
       materiasInscritas: parsedMaterias,
+      uidAlumno: data['uid_alumno'] ?? '',
     );
   }
 
@@ -84,9 +83,9 @@ class Inscripcion {
       'id_grupo': idGrupo,
       'id_semestre': idSemestre,
       'fecha_inscripcion': fechaInscripcion,
-      'materias_inscritas': materiasInscritas
-          .map((m) => m.toMap())
-          .toList(), // Convertir lista de objetos a lista de Maps
+      'materias_inscritas':
+          materiasInscritas.map((materia) => materia.toMap()).toList(),
+      'uid_alumno': uidAlumno,
     };
   }
 }

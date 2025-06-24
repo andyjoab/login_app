@@ -1,14 +1,5 @@
-// lib/components/pages.dart
 import 'package:flutter/material.dart';
-// No necesitas todas estas importaciones si solo vas a usar InfoPersonalScreen
-// import 'package:flutter/services.dart';
-// import 'package:intl/intl.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:firebase_auth/firebase_auth.dart'; // No necesaria aquí si pasas el UID
-// import 'package:login_app/modelos/modelo_alumno.dart';
-// import 'package:login_app/firebase_options.dart';
-// import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:login_app/reinscripcion/semestre.dart'; // Asegúrate de que este archivo exista
+import 'package:login_app/reinscripcion/semestre.dart'; 
 import 'package:login_app/navMethods/registro_alumno.dart'; // Importa InfoPersonalScreen
 import 'package:firebase_auth/firebase_auth.dart'; // Necesario para obtener el UID aquí
 

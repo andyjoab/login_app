@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-//import 'package:login_app/login_app/registration_screen.dart';
-//import 'main_menu_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {

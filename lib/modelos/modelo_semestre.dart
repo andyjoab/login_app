@@ -3,13 +3,12 @@
 class Semestre {
   final String idSemestre; // Corresponds to Firestore document ID
   final String nombreSemestre; // Corresponds to 'nombre_semestre' field
-  final bool
-      activo; //  para indicar si el semestre está activo para reinscripción
+  final bool activo;
 
   Semestre({
     required this.idSemestre,
     required this.nombreSemestre,
-    this.activo = true, // Valor por defecto en Dart
+    this.activo = true,
   });
 
   factory Semestre.fromFirestore(Map<String, dynamic> data, String id) {

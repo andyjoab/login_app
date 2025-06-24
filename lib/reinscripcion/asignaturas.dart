@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Para Timestamp
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Para obtener el UID del usuario
 import 'package:login_app/servicio/firestore_service.dart'; // Importa tu FirestoreService
 import 'package:login_app/modelos/modelo_ofertaacademica.dart'; // Importa el modelo de OfertaAcademica
@@ -27,37 +27,47 @@ class Seleccion_Asignaturas extends StatefulWidget {
 class _Seleccion_AsignaturasState extends State<Seleccion_Asignaturas> {
   final FirestoreService _firestoreService = FirestoreService();
   final List<OfertaAcademica> _selectedMaterias = [];
-  String?
-      _currentAlumnoMatricula; // Para almacenar la matrícula del alumno actual
+  String? _currentAlumnoMatricula;
+  String? _currentAlumnoUid; // <--- Nuevo: Para almacenar el UID del alumno
+  bool _isLoadingAlumnoData = true; // Para saber si ya cargó la matrícula y UID
 
   @override
   void initState() {
     super.initState();
-    _loadCurrentAlumnoMatricula(); // Cargar la matrícula al iniciar
+    _loadCurrentAlumnoData(); // Cargar la matrícula y UID al iniciar
   }
 
-  Future<void> _loadCurrentAlumnoMatricula() async {
+  Future<void> _loadCurrentAlumnoData() async {
     User? currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
+      _currentAlumnoUid =
+          currentUser.uid; // Asigna el UID del usuario autenticado
+
       // Asumiendo que el UID de Firebase Auth es el ID del documento del alumno
-      Alumno? alumno = await _firestoreService.getAlumno(currentUser.uid);
+      // Asegúrate de que tu FirestoreService tenga un método getAlumnoData que use el UID
+      Alumno? alumno = await _firestoreService.getAlumnoData(currentUser.uid);
       if (alumno != null) {
         setState(() {
           _currentAlumnoMatricula = alumno.matricula;
+          _isLoadingAlumnoData = false;
         });
       } else {
-        print(
+        debugPrint(
             'Error: No se encontró el perfil del alumno para el UID ${currentUser.uid}');
-        // Manejar el caso donde el alumno no tiene perfil en Firestore
         _showErrorSnackBar(
             'No se pudo cargar la matrícula del alumno. Contacte a soporte.');
+        setState(() {
+          _isLoadingAlumnoData = false;
+        });
       }
     } else {
-      print('Error: Usuario no autenticado.');
-      // Redirigir al login si no hay usuario
+      debugPrint('Error: Usuario no autenticado.');
       _showErrorSnackBar('Debes iniciar sesión para reinscribirte.');
-      Navigator.of(context)
-          .popUntil((route) => route.isFirst); // Vuelve al inicio o login
+      // Redirigir al login si no hay usuario (asegúrate de que esta ruta exista)
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      setState(() {
+        _isLoadingAlumnoData = false;
+      });
     }
   }
 
@@ -73,9 +83,10 @@ class _Seleccion_AsignaturasState extends State<Seleccion_Asignaturas> {
       return;
     }
 
-    if (_currentAlumnoMatricula == null) {
+    if (_currentAlumnoMatricula == null || _currentAlumnoUid == null) {
+      // <-- Verifica también _currentAlumnoUid
       _showErrorSnackBar(
-          'No se pudo obtener la matrícula del alumno. Intenta de nuevo.');
+          'No se pudo obtener la matrícula o UID del alumno. Intenta de nuevo.');
       return;
     }
 
@@ -88,34 +99,87 @@ class _Seleccion_AsignaturasState extends State<Seleccion_Asignaturas> {
         nombreAsignatura: oferta.nombreAsignatura,
         numeroEmpleadoIngeniero: oferta.numeroEmpleadoIngeniero,
         nombreIngeniero: oferta.nombreIngeniero,
-        horarioClase: oferta.horario,
+        horarioClase: oferta
+            .horario, // Asume que OfertaAcademica ya tiene el horario en el formato correcto
       );
     }).toList();
 
-    // Crear la instancia de Inscripcion
-    final nuevaInscripcion = Inscripcion(
-      idInscripcion: '', // Firestore generará este ID
-      matriculaAlumno: _currentAlumnoMatricula!,
-      idGrupo: widget.groupId,
-      idSemestre: widget.semesterId,
-      fechaInscripcion: Timestamp.now(),
-      materiasInscritas: materiasParaInscripcion,
-    );
-
     try {
-      await _firestoreService.registrarInscripcion(nuevaInscripcion);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Reinscripción registrada con éxito!'),
-          backgroundColor: Color.fromARGB(255, 120, 239, 255),
-        ),
+      // Buscar una inscripción existente para el alumno en el semestre y grupo actual
+      // AÑADIR FILTRO POR UID DEL ALUMNO para cumplir con las reglas de seguridad
+      final existingInscripcionQuery = await FirebaseFirestore.instance
+          .collection('inscripciones')
+          .where('matricula_alumno', isEqualTo: _currentAlumnoMatricula!)
+          .where('id_grupo', isEqualTo: widget.groupId)
+          .where('id_semestre', isEqualTo: widget.semesterId)
+          .where('uid_alumno',
+              isEqualTo: _currentAlumnoUid!) //  Filtro por UID del alumno
+          .limit(1)
+          .get();
+
+      if (existingInscripcionQuery.docs.isNotEmpty) {
+        // Actualizar inscripción existente
+        String inscriptionId = existingInscripcionQuery.docs.first.id;
+        await _firestoreService.updateInscripcion(
+          inscriptionId, // ID del documento a actualizar
+          {
+            'materias_inscritas':
+                materiasParaInscripcion.map((m) => m.toMap()).toList(),
+            'fecha_inscripcion': Timestamp.now(),
+            'uid_alumno':
+                _currentAlumnoUid, // Asegurar que el UID se mantiene/actualiza
+          },
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Inscripción actualizada exitosamente!')),
+        );
+      } else {
+        // Crear nueva inscripción
+        // Firestore generará el ID del documento si no se especifica
+        final newInscripcionRef =
+            FirebaseFirestore.instance.collection('inscripciones').doc();
+
+        final nuevaInscripcion = Inscripcion(
+          idInscripcion:
+              newInscripcionRef.id, // Usar el ID generado por Firestore
+          matriculaAlumno: _currentAlumnoMatricula!,
+          idGrupo: widget.groupId,
+          idSemestre: widget.semesterId,
+          fechaInscripcion: Timestamp.now(),
+          materiasInscritas: materiasParaInscripcion,
+          uidAlumno:
+              _currentAlumnoUid!, // <--- AÑADIDO: Asigna el UID del alumno aquí
+        );
+
+        await _firestoreService.createInscripcion(
+            nuevaInscripcion); // Llama al servicio con el objeto completo
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reinscripción creada exitosamente!')),
+        );
+      }
+
+      // Opcional: Actualizar el id_grupo_actual y id_semestre_actual en el perfil del Alumno
+      // Esto es útil para que el MainMenuScreen sepa cuál es la inscripción "activa"
+      await _firestoreService.updateAlumnoData(
+        _currentAlumnoUid!,
+        {
+          'id_grupo_actual': widget.groupId,
+          'id_semestre_actual': widget.semesterId,
+        },
       );
-      // Opcional: Navegar a una pantalla de confirmación o volver al menú principal
-      Navigator.of(context)
-          .popUntil((route) => route.isFirst); // Regresa al inicio
+
+      // Navegar de vuelta al menú principal
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reinscripción completada.')),
+      );
+    } on FirebaseException catch (e) {
+      debugPrint("Error de Firebase al registrar inscripción: ${e.message}");
+      _showErrorSnackBar('Error de Firebase: ${e.message}');
     } catch (e) {
-      print('Error al registrar reinscripción: $e');
-      _showErrorSnackBar('Error al registrar reinscripción: $e');
+      debugPrint("Error general al registrar inscripción: $e");
+      _showErrorSnackBar('Error al realizar la inscripción: $e');
     }
   }
 
@@ -123,104 +187,115 @@ class _Seleccion_AsignaturasState extends State<Seleccion_Asignaturas> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-            '${widget.groupName} - ${widget.semesterName}'), //('Materias de ${widget.groupName} - ${widget.semesterName}'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        title: Text('${widget.groupName} - ${widget.semesterName}'),
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(
+          color: Color.fromARGB(255, 39, 38, 38),
+        ),
+        foregroundColor: Colors.black,
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              'Selecciona las materias',
-              style: Theme.of(context).textTheme.headlineSmall,
-              textAlign: TextAlign.center,
-            ),
-          ),
-          Expanded(
-            // StreamBuilder para obtener la oferta académica en tiempo real
-            child: StreamBuilder<List<OfertaAcademica>>(
-              stream: _firestoreService.getOfertaAcademicaPorGrupoYSemestre(
-                  widget.semesterId, widget.groupId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  print("Error al cargar oferta académica: ${snapshot.error}");
-                  return Center(
-                      child:
-                          Text('Error al cargar materias: ${snapshot.error}'));
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(
+      body:
+          _isLoadingAlumnoData // Mostrar indicador de carga mientras se obtienen datos del alumno
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
                       child: Text(
-                          'No hay materias ofertadas para este grupo y semestre.'));
-                }
-
-                final ofertaAcademica = snapshot.data!;
-                return ListView.builder(
-                  itemCount: ofertaAcademica.length,
-                  itemBuilder: (context, index) {
-                    final oferta = ofertaAcademica[index];
-                    final isSelected = _selectedMaterias.contains(oferta);
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 16.0, vertical: 8.0),
-                      elevation: 3,
-                      child: CheckboxListTile(
-                        title: Text(oferta.nombreAsignatura,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(
-                          'Ing. ${oferta.nombreIngeniero}\nHorario: ${oferta.horario.entries.map((e) => '${e.key}: ${e.value}').join(', ')}',
-                        ),
-                        value: isSelected,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              _selectedMaterias.add(oferta);
-                            } else {
-                              _selectedMaterias.remove(oferta);
-                            }
-                          });
-                        },
-                        secondary: isSelected
-                            ? const Icon(Icons.check_circle,
-                                color: Color.fromARGB(255, 96, 207, 202))
-                            : null,
+                        'Selecciona las materias',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                        textAlign: TextAlign.center,
                       ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ElevatedButton(
-              onPressed: _confirmSelection,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    Expanded(
+                      // StreamBuilder para obtener la oferta académica en tiempo real
+                      child: StreamBuilder<List<OfertaAcademica>>(
+                        stream: _firestoreService
+                            .getOfertaAcademicaPorGrupoYSemestre(
+                                widget.semesterId, widget.groupId),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          }
+                          if (snapshot.hasError) {
+                            debugPrint(
+                                "Error al cargar oferta académica: ${snapshot.error}");
+                            return Center(
+                                child: Text(
+                                    'Error al cargar materias: ${snapshot.error}'));
+                          }
+                          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return const Center(
+                                child: Text(
+                                    'No hay materias ofertadas para este grupo y semestre.'));
+                          }
+
+                          final ofertaAcademica = snapshot.data!;
+                          return ListView.builder(
+                            itemCount: ofertaAcademica.length,
+                            itemBuilder: (context, index) {
+                              final oferta = ofertaAcademica[index];
+                              final isSelected =
+                                  _selectedMaterias.contains(oferta);
+                              return Card(
+                                margin: const EdgeInsets.symmetric(
+                                    horizontal: 16.0, vertical: 8.0),
+                                elevation: 3,
+                                child: CheckboxListTile(
+                                  title: Text(oferta.nombreAsignatura,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  subtitle: Text(
+                                    'Ing. ${oferta.nombreIngeniero}\nHorario: ${oferta.horario.entries.map((e) => '${e.key}: ${e.value}').join(', ')}',
+                                  ),
+                                  value: isSelected,
+                                  onChanged: (bool? value) {
+                                    setState(() {
+                                      if (value == true) {
+                                        _selectedMaterias.add(oferta);
+                                      } else {
+                                        _selectedMaterias.remove(oferta);
+                                      }
+                                    });
+                                  },
+                                  secondary: isSelected
+                                      ? const Icon(Icons.check_circle,
+                                          color:
+                                              Color.fromARGB(255, 96, 207, 202))
+                                      : null,
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: ElevatedButton(
+                        onPressed: _confirmSelection,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 15.0),
+                          minimumSize: const Size.fromHeight(50),
+                        ),
+                        child: const Text(
+                          'Confirmar Selección',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 15.0),
-                minimumSize: const Size.fromHeight(50),
-              ),
-              child: const Text(
-                'Confirmar Selección',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
