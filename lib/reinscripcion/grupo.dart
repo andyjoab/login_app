@@ -70,9 +70,9 @@ class _SelecciongrupoState extends State<Selecciongrupo> {
                       Color buttonColor =
                           Theme.of(context).colorScheme.secondary;
                       if (index % 2 == 0) {
-                        buttonColor = const Color.fromARGB(255, 244, 247, 112);
+                        buttonColor = const Color(0xFF99edc3);
                       } else {
-                        buttonColor = const Color.fromARGB(255, 252, 193, 145);
+                        buttonColor = const Color(0xFF728C69);
                       }
 
                       return Padding(

@@ -55,31 +55,31 @@ class _SeleccionsemestreState extends State<Seleccionsemestre> {
                     Color buttonColor;
                     switch (semestre.nombreSemestre) {
                       case '1° Semestre':
-                        buttonColor = const Color(0XFF95FAB9);
+                        buttonColor = const Color(0XFFB2D3C2);
                         break;
                       case '2° Semestre':
                         buttonColor = const Color(0xFFFFB5E8);
                         break;
                       case '3° Semestre':
-                        buttonColor = const Color(0XFFAFCBFF);
+                        buttonColor = const Color(0XFF99edc3);
                         break;
                       case '4° Semestre':
-                        buttonColor = const Color(0xFFA79AFF);
+                        buttonColor = const Color(0xFFAF359);
                         break;
                       case '5° Semestre':
-                        buttonColor = const Color(0xFFF6A6FF);
+                        buttonColor = const Color(0XFF607d3b);
                         break;
                       case '6° Semestre':
                         buttonColor = const Color(0XFFC4FAF8);
                         break;
                       case '7° Semestre':
-                        buttonColor = const Color(0xFFC3F8FF);
+                        buttonColor = const Color(0xFF74B72E);
                         break;
                       case '8° Semestre':
                         buttonColor = const Color(0xFFFF85D5);
                         break;
                       case '9° Semestre':
-                        buttonColor = const Color(0xFFFDFD96);
+                        buttonColor = const Color(0xFF98bf64);
                         break;
                       default:
                         buttonColor = Colors.grey;

@@ -31,6 +31,8 @@ dependencies:
   curved_navigation_bar: ^1.0.6
   flutter:
     sdk: flutter
+  #permission_handler: ^11.2.0
+  flutter_speed_dial: ^7.0.0
   pdf: ^3.10.8
   printing: ^5.12.0
   path_provider: ^2.0.14
@@ -45,6 +47,7 @@ dependencies:
   file_picker:  ^10.2.0  # Para obtener rutas de directorio
   url_launcher: ^6.1.10 # Para abrir enlaces web  
   intl: 0.20.2 # Para la localización y formateo de fechas
+  fl_chart: ^1.0.0
 dio: ^5.4.3+1        # Para realizar solicitudes HTTP y descargar archivos
   
  # Para crear una barra de navegación curva
@@ -68,7 +71,7 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/tapa.png"
+  image_path: "assets/LOGOS ALTA_RAYO.png"
 # The following section is specific to Flutter packages.
 flutter:
 
@@ -81,6 +84,16 @@ flutter:
   assets:
   - assets/logo_login_tecnm.png
   - assets/Logo-TecNM-2017.png
+  #- assets/+kota.png
+  - assets/Isc.png
+  - assets/TesT.png
+  - assets/Recurso 80.png
+  - assets/Recurso 35.png
+  - assets/Recurso 8.png
+  - assets/Recurso 3.png
+  - assets/LOGOS ALTA_RAYO.png
+  - assets/LOGOS ALTA_TEST 1.png
+  #- assets/nuevo1.png
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

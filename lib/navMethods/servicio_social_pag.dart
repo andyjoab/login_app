@@ -192,7 +192,7 @@ class _ServicioSocialScreenState extends State<ServicioSocialScreen> {
       appBar: AppBar(
         title: const Text('Servicio Social',
             style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.blue[700],
+        backgroundColor: Colors.green[700],
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _auth.currentUser == null
@@ -270,8 +270,10 @@ class _ServicioSocialScreenState extends State<ServicioSocialScreen> {
                 ),
               IconButton(
                 icon: Icon(
-                  isUploaded ? Icons.cloud_upload : Icons.note_add,
-                  color: isUploaded ? Colors.orange : Colors.blue,
+                  isUploaded ? Icons.cloud_upload : Icons.add_task,
+                  color: isUploaded
+                      ? const Color(0xFF607D3B)
+                      : Colors.green,
                   size: 30,
                 ),
                 onPressed: () => _pickAndUploadPdf(documentType),

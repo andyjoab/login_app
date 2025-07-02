@@ -7,26 +7,26 @@ class EphimeralDrawerNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255), // Fondo blanco
       child: ListView(
         padding: EdgeInsets.zero,
         children: <Widget>[
           Container(
-            decoration: BoxDecoration(
+            height: 150, // Keep a fixed height or adjust as needed
+            decoration: const BoxDecoration( // Made const as no dynamic parts
               image: DecorationImage(
-                image: AssetImage('assets/Logo-TecNM-2017.png'),
-                fit: BoxFit.cover,
+                image: AssetImage('assets/Recurso 35.png'),
+                fit: BoxFit.contain, // Changed from .cover to .contain
+                alignment: Alignment.center, // Center the image within the space
               ),
             ),
-            child: const SizedBox(
-              height: 150,
-              child: DrawerHeader(
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                ),
-                child: null,
+            child: const DrawerHeader( // DrawerHeader content can be null if only used for background
+              decoration: BoxDecoration(
+                color: Colors.transparent,
               ),
-            ), // Encabezado personalizado
-          ),
+              child: null, // No content needed directly inside DrawerHeader for this setup
+            ),
+          ), // Encabezado personalizado
           ListTile(
             leading: const Icon(Icons.person),
             title: const Text(

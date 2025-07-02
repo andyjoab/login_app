@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Para TextInputFormatter
 import 'package:cloud_firestore/cloud_firestore.dart';
-//import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart'; // Para formatear la fescha
+import 'package:intl/intl.dart'; // Para formatear la fecha
 import 'package:login_app/modelos/modelo_alumno.dart';
-//import 'package:login_app/components/pages.dart';
 
 class InfoPersonalScreen extends StatefulWidget {
   final String userUid;
@@ -34,10 +32,10 @@ class _InfoPersonalScreenState extends State<InfoPersonalScreen> {
   DateTime? _selectedDate; // Variable para almacenar la fecha seleccionada
   final TextEditingController _fechaNacimientoController =
       TextEditingController(); // Controlador para la fecha de nacimiento
+
   @override
   void initState() {
     super.initState();
-    // Opcional: Cargar datos existentes si el alumno ya tiene un registro
     _loadExistingAlumnoData();
   }
 
@@ -98,7 +96,7 @@ class _InfoPersonalScreenState extends State<InfoPersonalScreen> {
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       locale: const Locale('es', 'ES'),
-      helpText: 'Selecciona una fecha',
+      helpText: '¿Cuál es tu fecha de nacimiento?',
       cancelText: 'Cancelar',
       confirmText: 'Aceptar',
     );
@@ -117,6 +115,24 @@ class _InfoPersonalScreenState extends State<InfoPersonalScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text('Por favor, selecciona tu fecha de nacimiento.')),
+        );
+        return;
+      }
+
+      // Validar matrícula única antes de guardar
+      final matricula = _matriculaController.text;
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('alumnos')
+          .where('matricula', isEqualTo: matricula)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty &&
+          querySnapshot.docs.first.id != widget.userUid) {
+        // If a document with this matricula exists and it's not the current user's document
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('La matrícula ingresada ya está registrada por otro alumno.')),
         );
         return;
       }
@@ -164,12 +180,15 @@ class _InfoPersonalScreenState extends State<InfoPersonalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        systemOverlayStyle:
+            SystemUiOverlayStyle.dark, // Cambia el color de la barra de estado
         title: const Text(
           'Información Personal',
           style: TextStyle(
             color: Colors.black,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.normal,
           ),
         ),
         backgroundColor: Colors.white,
@@ -196,6 +215,7 @@ class _InfoPersonalScreenState extends State<InfoPersonalScreen> {
                   }
                   return null;
                 },
+                maxLength: 30, // Limit to 30 characters
               ),
               _buildTextFormField(
                 _apellidoController,
@@ -208,21 +228,25 @@ class _InfoPersonalScreenState extends State<InfoPersonalScreen> {
                   }
                   return null;
                 },
+                maxLength: 30, // Limit to 30 characters
               ),
               _buildTextFormField(
                 _matriculaController,
                 'Matrícula',
-                'Ingresa tu matrícula (ej. 201234567)',
+                'Ingresa tu matrícula (9 dígitos)',
                 (value) {
-                  if (value == null || value.isEmpty) return 'Campo requerido';
+                  if (value == null || value.isEmpty) return 'Campo obligatorio';
                   if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
                     return 'Solo números';
                   }
-                  if (value.length != 9) return 'Debe tener 9 dígitos';
+                  if (value.length != 9 ) return 'Debe tener 9 dígitos';
                   return null;
                 },
                 keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(9), // Limit to 10 digits
+                ],
               ),
               _buildTextFormField(
                 _curpController,
@@ -241,16 +265,17 @@ class _InfoPersonalScreenState extends State<InfoPersonalScreen> {
                 },
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
+                  LengthLimitingTextInputFormatter(18), // Limit to 18 characters
                 ],
               ),
               TextFormField(
                 controller: _fechaNacimientoController,
                 decoration: InputDecoration(
-                  labelText: 'Fecha de Nacimiento',
+                  labelText: 'Fecha de nacimiento',
                   hintText: 'DD/MM/AAAA',
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.calendar_today),
+                    icon: const Icon(Icons.cake),
                     onPressed: () => _selectDate(context),
                   ),
                 ),
@@ -264,14 +289,15 @@ class _InfoPersonalScreenState extends State<InfoPersonalScreen> {
               _buildTextFormField(
                 _correoInstitucionalController,
                 'Correo Institucional',
-                'ejemplo@test.edu.mx',
+                '@test.edu.mx',
                 (value) {
                   if (value == null || value.isEmpty) return 'Campo requerido';
                   if (!value.endsWith('@test.edu.mx')) {
                     return 'El correo debe terminar en @test.edu.mx';
                   }
-                  if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(value)) {
-                    return 'Ingresa un correo válido';
+                  // Basic email format validation
+                  if (!RegExp(r'^[a-zA-Z0-9._%+-]+@test\.edu\.mx$').hasMatch(value)) {
+                    return 'Ingresa un correo institucional válido';
                   }
                   return null;
                 },
@@ -291,43 +317,63 @@ class _InfoPersonalScreenState extends State<InfoPersonalScreen> {
                   return null;
                 },
                 keyboardType: TextInputType.phone,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10), // Limit to 10 digits
+                ],
               ),
               _buildTextFormField(
                 _entidadController,
                 'Entidad Federativa',
-                'Ej. Ciudad de México',
+                'Ciudad de México',
                 (value) {
                   if (value == null || value.isEmpty) return 'Campo requerido';
+                  if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$').hasMatch(value)) {
+                    return 'Solo letras y espacios';
+                  }
                   return null;
                 },
+                maxLength: 30, // Limit to 30 characters
               ),
               _buildTextFormField(
                 _municipioController,
                 'Municipio',
-                'Ej. Cuauhtémoc',
+                'Tianguistenco',
                 (value) {
                   if (value == null || value.isEmpty) return 'Campo requerido';
+                  if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$').hasMatch(value)) {
+                    return 'Solo letras y espacios';
+                  }
                   return null;
                 },
+                maxLength: 30, // Limit to 30 characters
               ),
               _buildTextFormField(
                 _coloniaController,
                 'Colonia',
-                'Ej. Centro',
+                'Centro',
                 (value) {
                   if (value == null || value.isEmpty) return 'Campo requerido';
+                  if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$').hasMatch(value)) {
+                    return 'Solo letras y espacios';
+                  }
                   return null;
                 },
+                maxLength: 30, // Limit to 30 characters
               ),
               _buildTextFormField(
                 _calleController,
                 'Calle y Número',
-                'Ej. Av. Insurgentes Sur #123',
+                'Av. Insurgentes Sur #123',
                 (value) {
                   if (value == null || value.isEmpty) return 'Campo requerido';
+                  // Allow letters, numbers, spaces, and common symbols like #, ., ,, -
+                  if (!RegExp(r'^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.,#\-]+$').hasMatch(value)) {
+                    return 'Caracteres no válidos';
+                  }
                   return null;
                 },
+                maxLength: 30, // Limit to 30 characters
               ),
               const SizedBox(height: 20),
               ElevatedButton(
@@ -359,6 +405,7 @@ class _InfoPersonalScreenState extends State<InfoPersonalScreen> {
     String? Function(String?)? validator, {
     TextInputType keyboardType = TextInputType.text,
     List<TextInputFormatter>? inputFormatters,
+    int? maxLength, // Added maxLength parameter
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -368,10 +415,20 @@ class _InfoPersonalScreenState extends State<InfoPersonalScreen> {
           labelText: label,
           hintText: hint,
           border: const OutlineInputBorder(),
+          counterText: maxLength != null
+              ? '${controller.text.length}/$maxLength'
+              : null, // Display character count
         ),
         keyboardType: keyboardType,
-        inputFormatters: inputFormatters,
+        inputFormatters: [
+          ...?inputFormatters,
+          if (maxLength != null) LengthLimitingTextInputFormatter(maxLength),
+        ],
         validator: validator,
+        onChanged: (text) {
+          // Trigger a rebuild to update the counterText
+          setState(() {});
+        },
       ),
     );
   }

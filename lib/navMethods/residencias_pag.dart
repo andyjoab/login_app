@@ -185,7 +185,7 @@ class _ProfessionalResidencyScreenState
       appBar: AppBar(
         title: const Text('Residencia Profesional',
             style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.blue[700], // Un azul más oscuro para el AppBar
+        backgroundColor: Colors.green[700], // Un azul más oscuro para el AppBar
         iconTheme: const IconThemeData(
             color: Colors.white), // Color del icono de retroceso
       ),
@@ -274,7 +274,7 @@ class _ProfessionalResidencyScreenState
                   color: isUploaded
                       ? Colors
                           .orange // Naranja si ya está subido (para indicar que se puede reemplazar)
-                      : Colors.blue, // Azul para subir
+                      : Colors.green, // Azul para subir
                   size: 30,
                 ),
                 onPressed: () => _pickAndUploadPdf(documentType),
